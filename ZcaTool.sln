@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30223.230
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZcaTool", "ZcaTool\ZcaTool.csproj", "{5BE44829-EE70-4DFF-9A09-ED03914BFFA5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibHac", "LibHac\src\LibHac\LibHac.csproj", "{D22E6057-9927-41AE-9191-6D70EEB05CBB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5BE44829-EE70-4DFF-9A09-ED03914BFFA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5BE44829-EE70-4DFF-9A09-ED03914BFFA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5BE44829-EE70-4DFF-9A09-ED03914BFFA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5BE44829-EE70-4DFF-9A09-ED03914BFFA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D22E6057-9927-41AE-9191-6D70EEB05CBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D22E6057-9927-41AE-9191-6D70EEB05CBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D22E6057-9927-41AE-9191-6D70EEB05CBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D22E6057-9927-41AE-9191-6D70EEB05CBB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {61641A78-B1C8-401B-80D8-B2A2E1AC4E1F}
+	EndGlobalSection
+EndGlobal

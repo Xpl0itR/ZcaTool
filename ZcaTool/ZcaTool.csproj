@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mono.Options" Version="6.6.0.161" />
+    <PackageReference Include="ZRA.NET" Version="0.0.1-Beta" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LibHac\src\LibHac\LibHac.csproj" />
+  </ItemGroup>
+
+</Project>

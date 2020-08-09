@@ -1,0 +1,36 @@
+name: ZCATool Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ '*' ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+        dotnet: ['3.1.100']
+    
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ matrix.dotnet }}
+
+      - name: Release build (Dotnet ${{ matrix.dotnet }}, OS ${{ matrix.os }})
+        run:  dotnet publish -c Release -f netcoreapp3.0
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ZCATool-${{ matrix.os }}
+          path: ZcaTool/bin/Release/netcoreapp3.0/publish/

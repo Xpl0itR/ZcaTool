@@ -1,0 +1,4 @@
+[submodule "LibHac"]
+	path = LibHac
+	url = https://github.com/Xpl0itR/LibHac.git
+	branch = misc
