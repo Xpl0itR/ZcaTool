@@ -65,36 +65,43 @@ namespace ZcaTool
             using (IStorage inStorage = new LocalStorage(args[0], FileAccess.Read))
             {
                 string fileName = Path.GetFileNameWithoutExtension(args[0]);
+                inStorage.GetSize(out long inSize);
                 IStorage outStorage;
 
                 switch (Path.GetExtension(args[0]).ToLower())
                 {
                     case ".nca":
+                        Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {compressionLevel} and frame size: {frameSize}");
                         outStorage = new ZraCompressionStorageHack(new Nca(KeySet, inStorage).OpenDecryptedNca(), compressionLevel, frameSize);
                         fileName += ".zca";
                         break;
                     case ".zca":
+                        Console.WriteLine($"Decompressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}]");
                         outStorage = new Nca(KeySet, new ZraDecompressionStream(inStorage.AsStream()).AsStorage()).OpenEncryptedNca();
                         fileName += ".nca";
                         break;
                     case ".nsp":
+                        Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {compressionLevel} and frame size: {frameSize}");
                         outStorage = ProcessPartitionFileSystem(new PartitionFileSystem(inStorage), PartitionFileSystemType.Standard, true, compressionLevel, frameSize);
                         fileName += ".zsp";
                         break;
                     case ".zsp":
+                        Console.WriteLine($"Decompressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}]");
                         outStorage = ProcessPartitionFileSystem(new PartitionFileSystem(inStorage), PartitionFileSystemType.Standard, false, compressionLevel, frameSize);
                         fileName += ".nsp";
                         break;
                     case ".xci":
+                        Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {compressionLevel} and frame size: {frameSize}");
                         outStorage = ProcessXci(inStorage, true, compressionLevel, frameSize);
                         fileName += ".zci";
                         break;
                     case ".zci":
+                        Console.WriteLine($"Decompressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}]");
                         outStorage = ProcessXci(inStorage, false, compressionLevel, frameSize);
                         fileName += ".xci";
                         break;
                     default:
-                        throw new Exception("Input file was not of a valid format");
+                        throw new Exception("Input file was not of a valid format!");
                 }
 
                 string filePath = Path.Join(outDirectoryPath, fileName);
@@ -103,7 +110,15 @@ namespace ZcaTool
                 {
                     outStorage.CopyToStream(outStream);
                 }
+
+                outStorage.GetSize(out long outSize);
+                Console.WriteLine($"Out file: {filePath} [{PrettyFileSize(outSize)}]");
+                Console.WriteLine($"Size Reduction: {decimal.Truncate(100 - (decimal)outSize / inSize * 100)}%");
             }
+
+            Console.WriteLine("Cleaning temp files...");
+            ZraCompressionStorageHack.CleanTempFiles();
+            Console.WriteLine("Done!");
         }
 
         public static IStorage ProcessXci(IStorage xciStorage, bool compress, byte compressionLevel = 0, uint frameSize = 0)
@@ -224,6 +239,27 @@ namespace ZcaTool
             }
 
             return ExternalKeyReader.ReadKeyFile(prodKeyFile, titleKeyFile, consoleKeyFile, dev: isDev);
+        }
+
+        public static string PrettyFileSize(double bytes, bool si = false)
+        {
+            int thresh = si ? 1000 : 1024;
+
+            if (Math.Abs(bytes) < thresh)
+                return $"{bytes}B";
+
+            int i = -1;
+            string[] units = si
+                ? new[] { "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" }
+                : new[] { "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB" };
+
+            do
+            {
+                bytes /= thresh;
+                ++i;
+            } while (Math.Abs(bytes) > thresh && i < units.Length - 1);
+
+            return $"{Math.Round(bytes, 2)}{units[i]}";
         }
     }
 }

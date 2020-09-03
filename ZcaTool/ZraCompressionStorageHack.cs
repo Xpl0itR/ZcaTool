@@ -5,6 +5,7 @@ using LibHac;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using ZRA.NET.Streaming;
 
@@ -12,6 +13,16 @@ namespace ZcaTool
 {
     public class ZraCompressionStorageHack : IStorage
     {
+        private static readonly Dictionary<string, IStorage> TempFiles = new Dictionary<string, IStorage>();
+        public static void CleanTempFiles()
+        {
+            foreach ((string tempFilePath, IStorage tempFile) in TempFiles)
+            {
+                tempFile?.Dispose();
+                File.Delete(tempFilePath);
+            }
+        }
+
         private readonly IStorage _baseStorage;
         private readonly bool _leaveOpen;
 
@@ -26,12 +37,12 @@ namespace ZcaTool
             using (ZraCompressionStream compressionStream = new ZraCompressionStream(outStream, (ulong)inSize, compressionLevel, frameSize, metaBuffer))
             {
                 inStorage.CopyToStream(compressionStream, (int)frameSize);
-                compressionStream.Flush();
             }
 
             if (!leaveOpen) inStorage.Dispose();
 
             _baseStorage = new StreamStorage(File.OpenRead(path), leaveOpen);
+            TempFiles.Add(path, _baseStorage);
         }
 
         protected override Result DoRead(long offset, Span<byte> destination) => _baseStorage.Read(offset, destination);

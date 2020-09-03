@@ -1,4 +1,4 @@
-name: ZCATool Build
+name: ZcaTool Build
 
 on:
   push:
@@ -32,5 +32,5 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ZCATool-${{ matrix.os }}
+          name: ZcaTool-${{ matrix.os }}
           path: ZcaTool/bin/Release/netcoreapp3.0/publish/

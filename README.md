@@ -1,5 +1,5 @@
 <p align="center">
-<b>ZCATool</b> is tool used to compress Nintendo Switch Formats (NCA/NSP/XCI) using the <a href="https://github.com/zraorg/ZRA">ZRA</a> compression library.
+<b>ZcaTool</b> is tool used to compress Nintendo Switch Formats (NCA/NSP/XCI) using the <a href="https://github.com/zraorg/ZRA">ZRA</a> compression library.
 <br>
 <a href="https://github.com/Xpl0itR/XcaTool/actions"><img align="center" alt="ZCATool Build" src="https://github.com/Xpl0itR/XcaTool/workflows/.github/workflows/build.yml/badge.svg"/></a>
 </p>
