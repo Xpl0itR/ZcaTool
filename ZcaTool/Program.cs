@@ -69,14 +69,13 @@ namespace ZcaTool
             {
                 string fileName = Path.GetFileNameWithoutExtension(args[0]);
                 inStorage.GetSize(out long inSize);
-                IStorage outStorage;
+                IStorage outStorage = null;
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 switch (Path.GetExtension(args[0]).ToLower())
                 {
                     case ".nca":
                         Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {compressionLevel} and frame size: {frameSize}");
-                        outStorage = new ZraCompressionStorageHack(new Nca(KeySet, inStorage).OpenDecryptedNca(), compressionLevel, frameSize, tempPath: tempPath);
                         fileName += ".zca";
                         break;
                     case ".zca":
@@ -108,14 +107,29 @@ namespace ZcaTool
                         throw new Exception("Input file was not of a valid format!");
                 }
 
+                long outSize;
                 string filePath = Path.Join(outDirectoryPath, fileName);
                 using (FileStream outStream = File.OpenWrite(filePath))
                 {
-                    outStorage.CopyToStream(outStream);
+                    if (Path.GetExtension(args[0]).ToLower() == ".nca")
+                    {
+                        IStorage decryptedNca = new Nca(KeySet, inStorage).OpenDecryptedNca();
+                        decryptedNca.GetSize(out long ncaLength);
+
+                        using (ZraCompressionStream compressionStream = new ZraCompressionStream(outStream, (ulong) ncaLength, compressionLevel, frameSize, leaveOpen: true))
+                        {
+                            decryptedNca.CopyToStream(compressionStream, (int)frameSize);
+                        }
+                    }
+                    else
+                    {
+                        outStorage.CopyToStream(outStream);
+                    }
+
+                    outSize = outStream.Length;
                 }
                 stopwatch.Stop();
 
-                outStorage.GetSize(out long outSize);
                 Console.WriteLine($"Out file: {filePath} [{PrettyFileSize(outSize)}]");
                 Console.WriteLine($"Time taken: {decimal.Round((decimal)stopwatch.ElapsedMilliseconds / 1000, 2)}s ({stopwatch.ElapsedMilliseconds}ms)");
                 Console.WriteLine($"Size Reduction: {decimal.Truncate(100 - (decimal)outSize / inSize * 100)}%");
