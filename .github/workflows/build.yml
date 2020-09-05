@@ -8,12 +8,11 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: 'ubuntu-latest'
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
-        dotnet: ['3.1.100']
+        runtime: ['win-x64', 'linux-x64', 'osx-x64']
     
     steps:
       - name: Git checkout
@@ -24,13 +23,13 @@ jobs:
       - name: Setup dotnet
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: ${{ matrix.dotnet }}
+          dotnet-version: '3.1.100'
 
-      - name: Release build (Dotnet ${{ matrix.dotnet }}, OS ${{ matrix.os }})
-        run:  dotnet publish -c Release -f netcoreapp3.0
+      - name: Release build (${{ matrix.runtime }})
+        run:  dotnet publish -c Release -f netcoreapp3.0 -r ${{ matrix.runtime }}
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ZcaTool-${{ matrix.os }}
-          path: ZcaTool/bin/Release/netcoreapp3.0/publish/
+          name: ZcaTool-${{ matrix.runtime }}
+          path: ZcaTool/bin/Release/netcoreapp3.0/${{ matrix.runtime }}/publish/
