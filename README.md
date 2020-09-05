@@ -12,10 +12,11 @@ Options:
   -h, --help                 Show this message and exit
   -v, --dev=VALUE            Load production keys as development keys (optional)
   -p, --prodkeys=VALUE       Path to a file containing switch production keys. (optional)
-  -t, --titlekeys=VALUE      Path to a file containing switch title keys. (optional)
+  -k, --titlekeys=VALUE      Path to a file containing switch title keys. (optional)
   -l, --level=VALUE          zStd compression level used to compress the file.
   -f, --framesize=VALUE      Size of a frame used to split a file.
   -o, --output=VALUE         The directory to output the compressed file. (Defaults to the same dir as input file)
+  -t, --temp=VALUE           The directory to use for storing temp files. (Defaults to OS temp)
 ```
 ***
 ### Format

@@ -13,36 +13,40 @@ namespace ZcaTool
 {
     public class ZraCompressionStorageHack : IStorage
     {
-        private static readonly Dictionary<string, IStorage> TempFiles = new Dictionary<string, IStorage>();
+        private static readonly List<Action> DisposeList = new List<Action>();
         public static void CleanTempFiles()
         {
-            foreach ((string tempFilePath, IStorage tempFile) in TempFiles)
-            {
-                tempFile?.Dispose();
-                File.Delete(tempFilePath);
-            }
+            foreach (Action dispose in DisposeList) dispose();
         }
 
         private readonly IStorage _baseStorage;
         private readonly bool _leaveOpen;
 
-        public ZraCompressionStorageHack(IStorage inStorage, byte compressionLevel, uint frameSize, byte[] metaBuffer = null, bool leaveOpen = false)
+        public ZraCompressionStorageHack(IStorage inStorage, byte compressionLevel, uint frameSize, byte[] metaBuffer = null, string tempPath = null, bool leaveOpen = false)
         {
             _leaveOpen = leaveOpen;
-
-            string path = Path.GetTempFileName();
             inStorage.GetSize(out long inSize);
 
-            using (FileStream outStream = File.OpenWrite(path))
-            using (ZraCompressionStream compressionStream = new ZraCompressionStream(outStream, (ulong)inSize, compressionLevel, frameSize, metaBuffer))
+            if (tempPath == null)
+            {
+                tempPath = Path.GetTempFileName();
+            }
+            else
+            {
+                Directory.CreateDirectory(tempPath);
+                tempPath = Path.Combine(tempPath, $"temp{new Random().Next()}.tmp");
+            }
+
+            FileStream tempFile = new FileStream(tempPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, 4096, FileOptions.RandomAccess | FileOptions.DeleteOnClose);
+            using (ZraCompressionStream compressionStream = new ZraCompressionStream(tempFile, (ulong)inSize, compressionLevel, frameSize, metaBuffer, true))
             {
                 inStorage.CopyToStream(compressionStream, (int)frameSize);
             }
 
             if (!leaveOpen) inStorage.Dispose();
 
-            _baseStorage = new StreamStorage(File.OpenRead(path), leaveOpen);
-            TempFiles.Add(path, _baseStorage);
+            _baseStorage = new StreamStorage(tempFile, leaveOpen);
+            DisposeList.Add(tempFile.Dispose);
         }
 
         protected override Result DoRead(long offset, Span<byte> destination) => _baseStorage.Read(offset, destination);
