@@ -21,33 +21,32 @@ namespace ZcaTool
     public static class Program
     {
         public static Keyset KeySet;
-        
+        public static string OutDirectoryPath;
+        public static string TempPath;
+        public static string ProdKeyPath;
+        public static string TitleKeyPath;
+        public static bool   ShowHelp;
+        public static bool   IsDev;
+        public static byte   CompressionLevel = 9;
+        public static uint   FrameSize        = 131072;
+
         public static void Main(string[] cmdArgs)
         {
-            string outDirectoryPath = null;
-            string tempPath         = null;
-            string prodKeyPath      = null;
-            string titleKeyPath     = null;
-            bool   showHelp         = false;
-            bool   isDev            = false;
-            byte   compressionLevel = 9;
-            uint   frameSize        = 131072;
-
             OptionSet optionSet = new OptionSet
             {
-                { "h|help",       "Show this message and exit",                                          _ => showHelp         = true          },
-                { "v|dev=",       "Load production keys as development keys\n(optional)",                _ => isDev            = true          },
-                { "p|prodkeys=",  "Path to a file containing switch production keys.\n(optional)",       s => prodKeyPath      = s             },
-                { "k|titlekeys=", "Path to a file containing switch title keys.\n(optional)",            s => titleKeyPath     = s             },
-                { "l|level=",     "zStd compression level used to compress the file.",                   s => compressionLevel = byte.Parse(s) },
-                { "f|framesize=", "Size of a frame used to split a file.",                               s => frameSize        = uint.Parse(s) },
-                { "t|temp=",      "The directory to use for storing temp files.\n(Defaults to OS temp)", s => tempPath         = s             },
-                { "o|output=",    "The directory to output the compressed file.\n(Defaults to the same dir as input file)", s => outDirectoryPath = s }
+                { "h|help",       "Show this message and exit",                                          _ => ShowHelp         = true          },
+                { "v|dev=",       "Load production keys as development keys\n(optional)",                _ => IsDev            = true          },
+                { "p|prodkeys=",  "Path to a file containing switch production keys.\n(optional)",       s => ProdKeyPath      = s             },
+                { "k|titlekeys=", "Path to a file containing switch title keys.\n(optional)",            s => TitleKeyPath     = s             },
+                { "l|level=",     "zStd compression level used to compress the file.",                   s => CompressionLevel = byte.Parse(s) },
+                { "f|framesize=", "Size of a frame used to split a file.",                               s => FrameSize        = uint.Parse(s) },
+                { "t|temp=",      "The directory to use for storing temp files.\n(Defaults to OS temp)", s => TempPath         = s             },
+                { "o|output=",    "The directory to output the compressed file.\n(Defaults to the same dir as input file)", s => OutDirectoryPath = s }
             };
 
             List<string> args = optionSet.Parse(cmdArgs);
 
-            if (showHelp)
+            if (ShowHelp)
             {
                 Console.WriteLine("ZcaTool - Copyright (c) 2020 Xpl0itR");
                 Console.WriteLine("Usage: ZcaTool(.exe) [options] <path>");
@@ -59,11 +58,11 @@ namespace ZcaTool
             if (args.Count < 1 || !File.Exists(args[0]))
                 throw new Exception("Input file does not exist!");
 
-            if (compressionLevel < 1 || compressionLevel > 22)
+            if (CompressionLevel < 1 || CompressionLevel > 22)
                 throw new Exception("You must enter a valid compression level!");
 
-            KeySet = LoadKeySet(prodKeyPath, titleKeyPath, isDev);
-            outDirectoryPath ??= Path.GetDirectoryName(args[0]);
+            KeySet = LoadKeySet();
+            OutDirectoryPath ??= Path.GetDirectoryName(args[0]);
 
             using (IStorage inStorage = new LocalStorage(args[0], FileAccess.Read))
             {
@@ -75,7 +74,7 @@ namespace ZcaTool
                 switch (Path.GetExtension(args[0]).ToLower())
                 {
                     case ".nca":
-                        Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {compressionLevel} and frame size: {frameSize}");
+                        Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {CompressionLevel} and frame size: {FrameSize}");
                         fileName += ".zca";
                         break;
                     case ".zca":
@@ -84,23 +83,23 @@ namespace ZcaTool
                         fileName += ".nca";
                         break;
                     case ".nsp":
-                        Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {compressionLevel} and frame size: {frameSize}");
-                        outStorage = ProcessPartitionFileSystem(new PartitionFileSystem(inStorage), PartitionFileSystemType.Standard, true, compressionLevel, frameSize, tempPath);
+                        Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {CompressionLevel} and frame size: {FrameSize}");
+                        outStorage = ProcessPartitionFileSystem(new PartitionFileSystem(inStorage), PartitionFileSystemType.Standard, true);
                         fileName += ".zsp";
                         break;
                     case ".zsp":
                         Console.WriteLine($"Decompressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}]");
-                        outStorage = ProcessPartitionFileSystem(new PartitionFileSystem(inStorage), PartitionFileSystemType.Standard, false, compressionLevel, frameSize, tempPath);
+                        outStorage = ProcessPartitionFileSystem(new PartitionFileSystem(inStorage), PartitionFileSystemType.Standard, false);
                         fileName += ".nsp";
                         break;
                     case ".xci":
-                        Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {compressionLevel} and frame size: {frameSize}");
-                        outStorage = ProcessXci(inStorage, true, compressionLevel, frameSize, tempPath);
+                        Console.WriteLine($"Compressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}] with ZStandard compression level: {CompressionLevel} and frame size: {FrameSize}");
+                        outStorage = ProcessXci(inStorage, true);
                         fileName += ".zci";
                         break;
                     case ".zci":
                         Console.WriteLine($"Decompressing {Path.GetFileName(args[0])} [{PrettyFileSize(inSize)}]");
-                        outStorage = ProcessXci(inStorage, false, compressionLevel, frameSize, tempPath);
+                        outStorage = ProcessXci(inStorage, false);
                         fileName += ".xci";
                         break;
                     default:
@@ -108,22 +107,23 @@ namespace ZcaTool
                 }
 
                 long outSize;
-                string filePath = Path.Join(outDirectoryPath, fileName);
+                string filePath = Path.Join(OutDirectoryPath, fileName);
                 using (FileStream outStream = File.OpenWrite(filePath))
                 {
                     if (Path.GetExtension(args[0]).ToLower() == ".nca")
                     {
-                        IStorage decryptedNca = new Nca(KeySet, inStorage).OpenDecryptedNca();
-                        decryptedNca.GetSize(out long ncaLength);
+                        (IStorage processedNca, byte[] metaBuffer) = ProcessNca(inStorage);
+                        processedNca.GetSize(out long ncaLength);
 
-                        using (ZraCompressionStream compressionStream = new ZraCompressionStream(outStream, (ulong) ncaLength, compressionLevel, frameSize, leaveOpen: true))
+                        using (ZraCompressionStream compressionStream = new ZraCompressionStream(outStream, (ulong) ncaLength, CompressionLevel, FrameSize, metaBuffer, true))
                         {
-                            decryptedNca.CopyToStream(compressionStream, (int)frameSize);
+                            processedNca.CopyToStream(compressionStream, (int)FrameSize);
                         }
                     }
                     else
                     {
                         outStorage.CopyToStream(outStream);
+                        outStorage?.Dispose();
                     }
 
                     outSize = outStream.Length;
@@ -140,14 +140,14 @@ namespace ZcaTool
             Console.WriteLine("Done!");
         }
 
-        public static IStorage ProcessXci(IStorage xciStorage, bool compress, byte compressionLevel = 0, uint frameSize = 0, string tempPath = null)
+        public static IStorage ProcessXci(IStorage xciStorage, bool compress)
         {
             Xci xci = new Xci(KeySet, xciStorage);
             IStorage xciHeaderStorage = new MemoryStorage(new byte[0x200]);
             xciStorage.CopyTo(xciHeaderStorage);
 
             XciPartition securePartition          = xci.OpenPartition(XciPartitionType.Secure);
-            IStorage     processedSecurePartition = ProcessPartitionFileSystem(securePartition, PartitionFileSystemType.Hashed, compress, compressionLevel, frameSize);
+            IStorage     processedSecurePartition = ProcessPartitionFileSystem(securePartition, PartitionFileSystemType.Hashed, compress);
 
             PartitionFileSystemBuilder rootPartitionBuilder = new PartitionFileSystemBuilder();
             rootPartitionBuilder.AddFile("secure", processedSecurePartition.AsFile(OpenMode.Read));
@@ -173,7 +173,7 @@ namespace ZcaTool
             }, false);
         }
 
-        public static IStorage ProcessPartitionFileSystem(PartitionFileSystem pfs, PartitionFileSystemType pfsType, bool compress, byte compressionLevel = 0, uint frameSize = 0, string tempPath = null)
+        public static IStorage ProcessPartitionFileSystem(PartitionFileSystem pfs, PartitionFileSystemType pfsType, bool compress)
         {
             PartitionFileSystemBuilder pfsBuilder = new PartitionFileSystemBuilder();
 
@@ -195,8 +195,8 @@ namespace ZcaTool
 
                 if (compress && Path.GetExtension(fileEntry.Name).ToLower() == ".nca")
                 {
-                    IStorage decryptedNcaStorage = new Nca(KeySet, file.AsStorage()).OpenDecryptedNca();
-                    IFile zcaFile = new ZraCompressionStorageHack(decryptedNcaStorage, compressionLevel, frameSize, tempPath: tempPath).AsFile(OpenMode.Read);
+                    (IStorage processedNca, byte[] metaBuffer) = ProcessNca(file.AsStorage());
+                    IFile zcaFile = new ZraCompressionStorageHack(processedNca, CompressionLevel, FrameSize, metaBuffer, TempPath).AsFile(OpenMode.Read);
 
                     pfsBuilder.AddFile($"{Path.GetFileNameWithoutExtension(fileEntry.Name)}.zca", zcaFile);
                 }
@@ -216,14 +216,66 @@ namespace ZcaTool
             return pfsBuilder.Build(pfsType);
         }
 
-        public static Keyset LoadKeySet(string paramProdKeyFile, string paramTitleKeyFile, bool isDev)
+        public static (IStorage processedNca, byte[] metaBuffer) ProcessNca(IStorage ncaStorage)
+        {
+            Nca nca = new Nca(KeySet, ncaStorage);
+
+            MemoryStream memoryStream = new MemoryStream();
+            memoryStream.Write(stackalloc byte[] { (byte)'Z', (byte)'C', (byte)'A', (byte)'0' });
+            memoryStream.Seek(1, SeekOrigin.Current);
+
+            byte sectionCount = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                if (nca.Header.IsSectionEnabled(i))
+                {
+                    sectionCount++;
+                    NcaFsHeader fsHeader = nca.Header.GetFsHeader(i);
+
+                    memoryStream.Write(BitConverter.GetBytes(nca.Header.GetSectionStartOffset(i)));
+                    memoryStream.Write(BitConverter.GetBytes(nca.Header.GetSectionSize(i)));
+                    memoryStream.WriteByte((byte)fsHeader.EncryptionType);
+                    memoryStream.Write(BitConverter.GetBytes(fsHeader.Counter));
+                }
+            }
+
+            memoryStream.Position = 4;
+            memoryStream.WriteByte(sectionCount);
+
+            return (nca.OpenDecryptedNca(), memoryStream.ToArray());
+        }
+
+        public static void ReadZcaHeader(byte[] zcaHeaderBytes)
+        {
+            using MemoryStream zcaHeaderStream = new MemoryStream(zcaHeaderBytes);
+            using BinaryReader reader          = new BinaryReader(zcaHeaderStream);
+
+            string magic = reader.ReadAscii(4);
+
+            if (magic != "ZCA0")
+                throw new Exception($"Invalid Magic. Expected Magic: ZCA0. Actual Magic: {magic}");
+
+            byte sectionCount = reader.ReadByte();
+            
+            Span<long>  sectionOffsets  = stackalloc long[sectionCount];
+            Span<long>  sectionSizes    = stackalloc long[sectionCount];
+            Span<byte>  encryptionTypes = stackalloc byte[sectionCount];
+            Span<ulong> aesCounters     = stackalloc ulong[sectionCount];
+
+            for (int i = 0; i < sectionCount; i++)
+            {
+                sectionOffsets[i]  = reader.ReadInt64();
+                sectionSizes[i]    = reader.ReadInt64();
+                encryptionTypes[i] = reader.ReadByte();
+                aesCounters[i]     = reader.ReadUInt64();
+            }
+        }
+
+        public static Keyset LoadKeySet()
         {
             string prodKeyFile    = null;
             string titleKeyFile   = null;
             string consoleKeyFile = null;
-
-            LoadSetAtPath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".switch"));
-            LoadSetAtPath(AppDomain.CurrentDomain.BaseDirectory);
 
             void LoadSetAtPath(string basePath)
             {
@@ -247,17 +299,20 @@ namespace ZcaTool
                 }
             }
 
-            if (File.Exists(paramProdKeyFile))
+            LoadSetAtPath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".switch"));
+            LoadSetAtPath(AppDomain.CurrentDomain.BaseDirectory);
+
+            if (File.Exists(ProdKeyPath))
             {
-                prodKeyFile = paramProdKeyFile;
+                prodKeyFile = ProdKeyPath;
             }
 
-            if (File.Exists(paramTitleKeyFile))
+            if (File.Exists(TitleKeyPath))
             {
-                titleKeyFile = paramTitleKeyFile;
+                titleKeyFile = TitleKeyPath;
             }
 
-            return ExternalKeyReader.ReadKeyFile(prodKeyFile, titleKeyFile, consoleKeyFile, dev: isDev);
+            return ExternalKeyReader.ReadKeyFile(prodKeyFile, titleKeyFile, consoleKeyFile, dev: IsDev);
         }
 
         public static string PrettyFileSize(double bytes, bool si = false)
